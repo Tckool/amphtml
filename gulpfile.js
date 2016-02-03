@@ -97,6 +97,7 @@ function buildExtensions(options) {
   buildExtension('amp-slides', '0.1', false, options);
   buildExtension('amp-twitter', '0.1', false, options);
   buildExtension('amp-user-notification', '0.1', true, options);
+  buildExtension('amp-viafoura', '0.1', false, options);
   buildExtension('amp-vimeo', '0.1', false, options);
   buildExtension('amp-vine', '0.1', false, options);
   buildExtension('amp-youtube', '0.1', false, options);
