@@ -14,73 +14,89 @@
  * limitations under the License.
  */
 
-import {isLayoutSizeDefined} from '../../../src/layout';
-import {loadPromise} from '../../../src/event-helper';
+import {
+    isLayoutSizeDefined
+}
+from '../../../src/layout';
+import {
+    loadPromise
+}
+from '../../../src/event-helper';
 
 // const FRAME_SRC = 'https://viafoura.io/';
-const FRAME_SRC = 'https://tim.whothaman.com/proxy_template.php';
+const FRAME_SRC = 'https://tim.whothaman.com/amp.php';
 
 // TODO: extend AMP.iframe somehow?
 class AmpViafoura extends AMP.BaseElement {
 
-  /** @override */
-  preconnectCallback(onLayout) {
-    // The viafoura iframe
-    this.preconnect.url('https://???.viafoura.com', onLayout);
-    // The Viafoura api
-    this.preconnect.url('https://api.viafoura.com', onLayout);
-    // Viafoura assets loaded in the iframe
-    this.preconnect.url('https://cdn.viafoura.net', onLayout);
-  }
+    /** @override */
+    preconnectCallback(onLayout) {
+        // The viafoura iframe
+        this.preconnect.url('https://???.viafoura.com', onLayout);
+        // The Viafoura api
+        this.preconnect.url('https://api.viafoura.com', onLayout);
+        // Viafoura assets loaded in the iframe
+        this.preconnect.url('https://cdn.viafoura.net', onLayout);
+    }
 
-  /** @override */
-  isLayoutSupported(layout) {
-    return isLayoutSizeDefined(layout);
-  }
+    /** @override */
+    isLayoutSupported(layout) {
+        return isLayoutSizeDefined(layout);
+    }
 
-  /** @override */
-  layoutCallback() {
-    let attributes = this.element.attributes;
-    let params = '';
-    for (i = 0; i < attributes.length; i++) {
-        let attributeName = attributes[i].nodeName;
-        if (attributeName.match('data-.*')) {
-            value = encodeURIComponent(this.element.getAttribute(attributeName));
-            attributeName = attributeName.slice(5);
-            params += '&' + encodeURIComponent(attributeName) + '=' + value;
+    /** @override */
+    layoutCallback() {
+        let attributes = this.element.attributes;
+        let params = '';
+        for (i = 0; i < attributes.length; i++) {
+            let attributeName = attributes[i].nodeName;
+            if (attributeName.match('data-.*')) {
+                value = encodeURIComponent(this.element.getAttribute(attributeName));
+                attributeName = attributeName.slice(5);
+                params += '&' + encodeURIComponent(attributeName) + '=' + value;
+            }
         }
-    }
-    // debugger;
 
-    const width = this.element.getAttribute('width');
-    const height = this.element.getAttribute('height');
+        window.addEventListener("message", this.resizeFrame.bind(this), false);
 
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('frameborder', '0');
-    iframe.src = `${FRAME_SRC}?${params}`;
+        const width = this.element.getAttribute('width');
+        const height = this.element.getAttribute('height');
 
-    this.applyFillContent(iframe);
+        const iframe = document.createElement('iframe');
+        iframe.setAttribute('frameborder', '0');
+        iframe.src = `${FRAME_SRC}?${params}`;
 
-    iframe.width = width;
-    iframe.height = height;
-    this.element.appendChild(iframe);
+        this.applyFillContent(iframe);
 
-    /** @private {?Element} */
-    this.iframe_ = iframe;
+        iframe.width = width;
+        iframe.height = height;
+        this.element.appendChild(iframe);
 
-    return loadPromise(iframe);
-  }
+        /** @private {?Element} */
+        this.iframe_ = iframe;
 
-  /** @override */
-  documentInactiveCallback() {
-    if (this.iframe_ && this.iframe_.contentWindow) {
-      this.iframe_.contentWindow./*OK*/postMessage('pause', '*');
+        return loadPromise(iframe);
     }
 
-    // No need to do layout later - user action will be expect to resume
-    // the playback
-    return false;
-  }
+    /** @override */
+    documentInactiveCallback() {
+        if (this.iframe_ && this.iframe_.contentWindow) {
+            this.iframe_.contentWindow. /*OK*/ postMessage('pause', '*');
+        }
+
+        // No need to do layout later - user action will be expect to resume
+        // the playback
+        return false;
+    }
+
+    resizeFrame(event) {
+        var origin = event.origin || event.originalEvent.origin;
+        if (origin !== "https://tim.whothaman.com" /*window.location.origin*/ )
+            return;
+
+        // extra 300 px buffer for things
+        this.element.style.height = event.data + 300 + "px";
+    }
 }
 
 AMP.registerElement('amp-viafoura', AmpViafoura);
