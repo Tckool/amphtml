@@ -16,71 +16,86 @@
 
 import {isLayoutSizeDefined} from '../../../src/layout';
 import {loadPromise} from '../../../src/event-helper';
+import {listen} from '../../../src/iframe-helper';
 
+const SRC_DOMAIN = 'dougal.whothaman.com';
 // const FRAME_SRC = 'https://viafoura.io/';
-const FRAME_SRC = 'https://tim.whothaman.com/proxy_template.php';
+const FRAME_SRC = `https://${SRC_DOMAIN}/amp.php`;
 
 // TODO: extend AMP.iframe somehow?
 class AmpViafoura extends AMP.BaseElement {
 
-  /** @override */
-  preconnectCallback(onLayout) {
-    // The viafoura iframe
-    this.preconnect.url('https://???.viafoura.com', onLayout);
-    // The Viafoura api
-    this.preconnect.url('https://api.viafoura.com', onLayout);
-    // Viafoura assets loaded in the iframe
-    this.preconnect.url('https://cdn.viafoura.net', onLayout);
-  }
-
-  /** @override */
-  isLayoutSupported(layout) {
-    return isLayoutSizeDefined(layout);
-  }
-
-  /** @override */
-  layoutCallback() {
-    let attributes = this.element.attributes;
-    let params = '';
-    for (i = 0; i < attributes.length; i++) {
-        let attributeName = attributes[i].nodeName;
-        if (attributeName.match('data-.*')) {
-            value = encodeURIComponent(this.element.getAttribute(attributeName));
-            attributeName = attributeName.slice(5);
-            params += '&' + encodeURIComponent(attributeName) + '=' + value;
-        }
-    }
-    // debugger;
-
-    const width = this.element.getAttribute('width');
-    const height = this.element.getAttribute('height');
-
-    const iframe = document.createElement('iframe');
-    iframe.setAttribute('frameborder', '0');
-    iframe.src = `${FRAME_SRC}?${params}`;
-
-    this.applyFillContent(iframe);
-
-    iframe.width = width;
-    iframe.height = height;
-    this.element.appendChild(iframe);
-
-    /** @private {?Element} */
-    this.iframe_ = iframe;
-
-    return loadPromise(iframe);
-  }
-
-  /** @override */
-  documentInactiveCallback() {
-    if (this.iframe_ && this.iframe_.contentWindow) {
-      this.iframe_.contentWindow./*OK*/postMessage('pause', '*');
+    /** @override */
+    preconnectCallback(onLayout) {
+      // The viafoura iframe
+      this.preconnect.url(`https://${SRC_DOMAIN}`, onLayout);
+      // The Viafoura api
+      this.preconnect.url('https://api.viafoura.com', onLayout);
+      // Viafoura assets loaded in the iframe
+      this.preconnect.url('https://cdn.viafoura.net', onLayout);
     }
 
-    // No need to do layout later - user action will be expect to resume
-    // the playback
-    return false;
-  }
+    /** @override */
+    isLayoutSupported(layout) {
+      return isLayoutSizeDefined(layout);
+    }
+
+    getDataAttrs() {
+        return Array.prototype.slice.call(this.element.attributes)
+          .map(attr => attr.nodeName)
+          .filter(attrName => attrName.match('data-.*'))
+          .map(name => [name.slice(5), this.element.getAttribute(name)])
+    }
+
+    getPageAttrs() {
+        return [];
+    }
+
+    getParams() {
+        return this.getDataAttrs()
+          .concat(this.getPageAttrs())
+          .map(pair => `${pair[0]}=${encodeURIComponent(pair[1])}`)
+          .reduce((prev, cur) => prev ? `${prev}&${cur}` : cur);
+    }
+
+    /** @override */
+    layoutCallback() {
+
+      const width = this.element.getAttribute('width');
+      const height = this.element.getAttribute('height');
+
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('frameborder', '0');
+      iframe.src = `${FRAME_SRC}?${this.getParams()}`;
+
+      this.applyFillContent(iframe);
+
+      iframe.width = width;
+      iframe.height = height;
+      this.element.appendChild(iframe);
+
+      /** @private {?Element} */
+      this.iframe_ = iframe;
+
+      listen(iframe, 'embed-size', function(data) {
+        iframe.height = data.height + 'px';
+        this.element.setAttribute('height', data.height + 'px');
+        this.element.style.height = data.height + 'px';
+      }.bind(this));
+
+      return loadPromise(iframe);
+    }
+
+    /** @override */
+    documentInactiveCallback() {
+      if (this.iframe_ && this.iframe_.contentWindow) {
+        this.iframe_.contentWindow. /*OK*/ postMessage('pause', '*');
+      }
+
+      // No need to do layout later - user action will be expect to resume
+      // the playback
+      return false;
+    }
 }
 
 AMP.registerElement('amp-viafoura', AmpViafoura);
