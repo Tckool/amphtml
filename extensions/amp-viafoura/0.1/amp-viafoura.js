@@ -17,85 +17,91 @@
 import {isLayoutSizeDefined} from '../../../src/layout';
 import {loadPromise} from '../../../src/event-helper';
 import {listen} from '../../../src/iframe-helper';
-
-const SRC_DOMAIN = 'dougal.whothaman.com';
+import {locations} from './locations';
+const SRC_DOMAIN = 'tim.whothaman.com';
 // const FRAME_SRC = 'https://viafoura.io/';
 const FRAME_SRC = `https://${SRC_DOMAIN}/amp.php`;
 
 // TODO: extend AMP.iframe somehow?
 class AmpViafoura extends AMP.BaseElement {
 
-    /** @override */
-    preconnectCallback(onLayout) {
-      // The viafoura iframe
-      this.preconnect.url(`https://${SRC_DOMAIN}`, onLayout);
-      // The Viafoura api
-      this.preconnect.url('https://api.viafoura.com', onLayout);
-      // Viafoura assets loaded in the iframe
-      this.preconnect.url('https://cdn.viafoura.net', onLayout);
-    }
+  /** @override */
+  preconnectCallback(onLayout) {
+    // The viafoura iframe
+    this.preconnect.url(`https://${SRC_DOMAIN}`, onLayout);
+    // The Viafoura api
+    this.preconnect.url('https://api.viafoura.com', onLayout);
+    // Viafoura assets loaded in the iframe
+    this.preconnect.url('https://cdn.viafoura.net', onLayout);
+  }
 
-    /** @override */
-    isLayoutSupported(layout) {
-      return isLayoutSizeDefined(layout);
-    }
+  /** @override */
+  isLayoutSupported(layout) {
+    return isLayoutSizeDefined(layout);
+  }
 
-    getDataAttrs() {
-        return Array.prototype.slice.call(this.element.attributes)
-          .map(attr => attr.nodeName)
-          .filter(attrName => attrName.match('data-.*'))
-          .map(name => [name.slice(5), this.element.getAttribute(name)])
-    }
+  getDataAttrs() {
+    return Array.prototype.slice.call(this.element.attributes)
+      .map(attr => attr.nodeName)
+      .filter(attrName => attrName.match('data-.*'))
+      .map(name => [name, this.element.getAttribute(name)])
+  }
 
-    getPageAttrs() {
-        return [];
-    }
+  getPageAttrs() {
+    var loc = locations();
+    loc.push(['url', location.href])
+    return loc;
+  }
 
-    getParams() {
-        return this.getDataAttrs()
-          .concat(this.getPageAttrs())
-          .map(pair => `${pair[0]}=${encodeURIComponent(pair[1])}`)
-          .reduce((prev, cur) => prev ? `${prev}&${cur}` : cur);
-    }
+  getParams() {
+    return this.getDataAttrs()
+      .concat(this.getPageAttrs())
+      .map(pair => `${pair[0]}=${encodeURIComponent(pair[1])}`)
+      .reduce((prev, cur) => prev ? `${prev}&${cur}` : cur);
+  }
 
-    /** @override */
-    layoutCallback() {
+  /** @override */
+  layoutCallback() {
 
-      const width = this.element.getAttribute('width');
-      const height = this.element.getAttribute('height');
+    const width = this.element.getAttribute('width');
+    const height = this.element.getAttribute('height');
 
-      const iframe = document.createElement('iframe');
-      iframe.setAttribute('frameborder', '0');
-      iframe.src = `${FRAME_SRC}?${this.getParams()}`;
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('frameborder', '0');
+    iframe.src = `${FRAME_SRC}?${this.getParams()}`;
 
-      this.applyFillContent(iframe);
+    this.applyFillContent(iframe);
 
-      iframe.width = width;
+    iframe.width = width;
+    iframe.height = height;
+    iframe.setAttribute('scrolling', 'no');
+
+    this.element.appendChild(iframe);
+
+    /** @private {?Element} */
+    this.iframe_ = iframe;
+
+    listen(iframe, 'embed-size', function(data) {
+      // Extra padding
+      let height = data.height + 100 + 'px';
       iframe.height = height;
-      this.element.appendChild(iframe);
+      this.element.setAttribute('height', height);
+      this.element.style.height = height;
+    }.bind(this));
 
-      /** @private {?Element} */
-      this.iframe_ = iframe;
+    return loadPromise(iframe);
+  }
 
-      listen(iframe, 'embed-size', function(data) {
-        iframe.height = data.height + 'px';
-        this.element.setAttribute('height', data.height + 'px');
-        this.element.style.height = data.height + 'px';
-      }.bind(this));
-
-      return loadPromise(iframe);
+  /** @override */
+  documentInactiveCallback() {
+    if (this.iframe_ && this.iframe_.contentWindow) {
+      this.iframe_.contentWindow. /*OK*/ postMessage('pause', '*');
     }
 
-    /** @override */
-    documentInactiveCallback() {
-      if (this.iframe_ && this.iframe_.contentWindow) {
-        this.iframe_.contentWindow. /*OK*/ postMessage('pause', '*');
-      }
-
-      // No need to do layout later - user action will be expect to resume
-      // the playback
-      return false;
-    }
+    // No need to do layout later - user action will be expect to resume
+    // the playback
+    return false;
+  }
 }
 
 AMP.registerElement('amp-viafoura', AmpViafoura);
