@@ -81,12 +81,15 @@ class AmpViafoura extends AMP.BaseElement {
     /** @private {?Element} */
     this.iframe_ = iframe;
 
+    var currentHeight = 0;
     listen(iframe, 'embed-size', function(data) {
-      // Extra padding
-      let height = data.height + 100 + 'px';
-      iframe.height = height;
-      this.element.setAttribute('height', height);
-      this.element.style.height = height;
+
+      if (currentHeight !== data.height) {
+        // Extra padding for the comment share dropdown
+        currentHeight = data.height;
+        height = data.height + 100 + 'px';
+        this.element.style.height = height;
+      }
     }.bind(this));
 
     return loadPromise(iframe);
