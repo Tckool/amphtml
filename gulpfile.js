@@ -340,6 +340,7 @@ function buildExamples(watch) {
   buildExample('released.amp.html');
   buildExample('twitter.amp.html');
   buildExample('user-notification.amp.html');
+  buildExample('viafoura.amp.html');
   buildExample('vimeo.amp.html');
   buildExample('vine.amp.html');
 

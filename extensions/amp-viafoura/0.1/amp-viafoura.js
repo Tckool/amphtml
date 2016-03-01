@@ -87,8 +87,7 @@ class AmpViafoura extends AMP.BaseElement {
       if (currentHeight !== data.height) {
         // Extra padding for the comment share dropdown
         currentHeight = data.height;
-        height = data.height + 100 + 'px';
-        this.element.style.height = height;
+        this.element.style.height = data.height + 100 + 'px';
       }
     }.bind(this));
 
