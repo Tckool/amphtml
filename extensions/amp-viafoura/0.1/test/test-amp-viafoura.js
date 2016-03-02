@@ -15,7 +15,7 @@
  */
 
  import {createIframePromise} from '../../../../testing/iframe';
- require('../../../../build/all/v0/amp-viafoura-0.1.max');
+ require('../amp-viafoura');
 
  import {adopt} from '../../../../src/runtime';
 adopt(window);

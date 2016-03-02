@@ -18,8 +18,7 @@ import {isLayoutSizeDefined} from '../../../src/layout';
 import {loadPromise} from '../../../src/event-helper';
 import {listen} from '../../../src/iframe-helper';
 import {locations} from './locations';
-const SRC_DOMAIN = 'api.viafoura.com'; //TODO what should this be???
-// const FRAME_SRC = 'https://viafoura.io/';
+const SRC_DOMAIN = 'api.viafoura.com';
 const FRAME_SRC = `https://${SRC_DOMAIN}/amp.php`;
 
 // TODO: extend AMP.iframe somehow?
@@ -27,8 +26,6 @@ class AmpViafoura extends AMP.BaseElement {
 
   /** @override */
   preconnectCallback(onLayout) {
-    // The viafoura iframe
-    this.preconnect.url(`https://${SRC_DOMAIN}`, onLayout);
     // The Viafoura api
     this.preconnect.url('https://api.viafoura.com', onLayout);
     // Viafoura assets loaded in the iframe
@@ -42,15 +39,14 @@ class AmpViafoura extends AMP.BaseElement {
 
   getDataAttrs() {
     return Array.prototype.slice.call(this.element.attributes)
-      .map(attr => attr.nodeName)
-      .filter(attrName => attrName.match('data-.*'))
-      .map(name => [name, this.element.getAttribute(name)])
+      .filter(attr => attr.nodeName.match('data-.*'))
+      .map(name => [name.nodeName, this.element.getAttribute(name.nodeName)]);
   }
 
   getPageAttrs() {
     var attributes = locations();
-    attributes.push(['url', location.href])
-    return loc;
+    attributes.push(['url', location.href]);
+    return attributes;
   }
 
   getParams() {
@@ -74,7 +70,11 @@ class AmpViafoura extends AMP.BaseElement {
 
     iframe.width = width;
     iframe.height = height;
-    iframe.setAttribute('scrolling', 'no');
+
+    this.isResizable_ = this.element.hasAttribute('resizable');
+    if (this.isResizable_) {
+      iframe.setAttribute('scrolling', 'no');
+    }
 
     this.element.appendChild(iframe);
 
@@ -82,14 +82,13 @@ class AmpViafoura extends AMP.BaseElement {
     this.iframe_ = iframe;
 
     var currentHeight = 0;
-    listen(iframe, 'embed-size', function(data) {
-
+    listen(iframe, 'embed-size', data => {
       if (currentHeight !== data.height) {
-        // Extra padding for the comment share dropdown
         currentHeight = data.height;
-        this.element.style.height = data.height + 100 + 'px';
+        iframe.width = currentHeight;
+        this.element.style.height = currentHeight + 'px';
       }
-    }.bind(this));
+    });
 
     return loadPromise(iframe);
   }

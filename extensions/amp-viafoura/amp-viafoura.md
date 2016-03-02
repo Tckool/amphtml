@@ -30,7 +30,7 @@ limitations under the License.
   <tr>
     <td width="40%"><strong>Required Script</strong></td>
     <td><code>
-      &lt;script async custom-element="amp-viafoura" src="http://myampserver.com:8000/dist/v0/amp-viafoura-0.1.max.js">&lt;/script>
+      &lt;script async custom-element="amp-viafoura" src="https://cdn.ampproject.org/v0/amp-viafoura-0.1.js">&lt;/script>
     </code></td>
   </tr>
   <tr>
