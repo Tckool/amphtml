@@ -18,7 +18,7 @@ import {isLayoutSizeDefined} from '../../../src/layout';
 import {loadPromise} from '../../../src/event-helper';
 import {listen} from '../../../src/iframe-helper';
 import {locations} from './locations';
-const SRC_DOMAIN = 'tim.whothaman.com';
+const SRC_DOMAIN = 'api.viafoura.com'; //TODO what should this be???
 // const FRAME_SRC = 'https://viafoura.io/';
 const FRAME_SRC = `https://${SRC_DOMAIN}/amp.php`;
 
@@ -48,8 +48,8 @@ class AmpViafoura extends AMP.BaseElement {
   }
 
   getPageAttrs() {
-    var loc = locations();
-    loc.push(['url', location.href])
+    var attributes = locations();
+    attributes.push(['url', location.href])
     return loc;
   }
 

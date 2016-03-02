@@ -18,36 +18,35 @@
  require('../../../../build/all/v0/amp-viafoura-0.1.max');
 
  import {adopt} from '../../../../src/runtime';
+adopt(window);
 
- adopt(window);
+describe('amp-viafoura', () => {
 
- describe('amp-viafoura', () => {
+  function getViafouraWidget(widget) {
+    return createIframePromise().then(iframe => {
+      const viafoura = iframe.doc.createElement('amp-viafoura');
+      viafoura.setAttribute('data-widget', widget);
+      viafoura.setAttribute('data-limit', 5);
+      viafoura.setAttribute('width', 500);
+      viafoura.setAttribute('height', 600);
+      return iframe.addElement(viafoura);
+    });
+  }
 
-   function getViafouraWidget(widget) {
-     return createIframePromise().then(iframe => {
-       const viafoura = iframe.doc.createElement('amp-viafoura');
-       viafoura.setAttribute('data-widget', widget);
-       viafoura.setAttribute('data-limit', 5);
-       viafoura.setAttribute('width', 500);
-       viafoura.setAttribute('height', 600);
-       return iframe.addElement(viafoura);
-     });
-   }
+  it('renders the Viafoura commenting widget', () => {
+    return getViafouraWidget("comments").then(ampViafoura => {
+      const iframe = ampViafoura.firstChild;
+      expect(iframe).to.not.be.null;
+      expect(iframe.tagName).to.equal('IFRAME');
+      expect(iframe.getAttribute('width')).to.equal('500');
+      expect(iframe.getAttribute('height')).to.equal('600');
+    });
+  });
 
-   it ('renders the correct Viafoura widget', () => {
-     return getViafouraWidget("comments").then(ampViafoura => {
-       const iframe = ampViafoura.firstChild;
-       expect(iframe).to.not.be.null;
-       expect(iframe.tagName).to.equal('IFRAME');
-       expect(iframe.getAttribute('width')).to.equal('500');
-       expect(iframe.getAttribute('height')).to.equal('600');
-     });
-   });
-
-   it('should pass data-attributes to the iframe src', () => {
+  it('should pass data-attributes to the iframe src', () => {
     return getViafouraWidget("comments").then(ampViafoura => {
       const iframe = ampViafoura.firstChild;
       expect(iframe.src).to.match(/data-widget=comments(&|&amp;)data-limit=5/);
     });
   });
- });
+});
