@@ -65,15 +65,16 @@ function getFrameAttributes(parentWindow, element, opt_type) {
     locationHref = parentWindow.parent.location.href;
   }
   attributes._context = {
-    referrer: viewer.getReferrerUrl(),
+    referrer: viewer.getUnconfirmedReferrerUrl(),
     canonicalUrl: docInfo.canonicalUrl,
     pageViewId: docInfo.pageViewId,
     clientId: element.getAttribute('ampcid'),
     location: {
-      href: locationHref
+      href: locationHref,
     },
     tagName: element.tagName,
-    mode: getMode()
+    mode: getMode(),
+    hidden: !viewer.isVisible(),
   };
   const adSrc = element.getAttribute('src');
   if (adSrc) {
@@ -155,11 +156,11 @@ export function addDataAndJsonAttributes_(element, attributes) {
 export function prefetchBootstrap(window) {
   const url = getBootstrapBaseUrl(window);
   const preconnect = preconnectFor(window);
-  preconnect.prefetch(url);
+  preconnect.prefetch(url, 'document');
   // While the URL may point to a custom domain, this URL will always be
   // fetched by it.
   preconnect.prefetch(
-      'https://3p.ampproject.net/$internalRuntimeVersion$/f.js');
+      'https://3p.ampproject.net/$internalRuntimeVersion$/f.js', 'script');
 }
 
 /**
@@ -183,14 +184,37 @@ export function getBootstrapBaseUrl(parentWindow, opt_strictForUnitTest) {
  */
 function getDefaultBootstrapBaseUrl(parentWindow) {
   let url =
-      'https://3p.ampproject.net/$internalRuntimeVersion$/frame.html';
+      'https://' + getSubDomain(parentWindow) +
+      '.ampproject.net/$internalRuntimeVersion$/frame.html';
   if (getMode().localDev) {
-    url = 'http://ads.localhost:' + parentWindow.location.port +
+    url = 'http://ads.localhost:' +
+        (parentWindow.location.port || parentWindow.parent.location.port) +
         '/dist.3p/current' +
         (getMode().minified ? '-min/frame' : '/frame.max') +
         '.html';
   }
   return url;
+}
+
+/**
+ * Sub domain on which the 3p iframe will be hosted.
+ * Because we only calculate the URL once per page, this function is only
+ * called once and hence all frames on a page use the same URL.
+ * @return {string}
+ * @visibleForTesting
+ */
+export function getSubDomain(win) {
+  let rand;
+  if (win.crypto && win.crypto.getRandomValues) {
+    // By default use 2 32 bit integers.
+    const uint32array = new Uint32Array(2);
+    win.crypto.getRandomValues(uint32array);
+    rand = String(uint32array[0]) + uint32array[1];
+  } else {
+    // Fall back to Math.random.
+    rand = String(win.Math.random()).substr(2) + '0';
+  }
+  return 'd-' + rand;
 }
 
 /**
